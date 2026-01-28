@@ -1,0 +1,15 @@
+# python 虚拟环境 (千万别传)
+venv/
+env/
+.env
+
+# 编译产生的缓存文件
+__pycache__/
+*.py[cod]
+
+# VS Code 配置 (个人配置通常不传)
+.vscode/
+
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
