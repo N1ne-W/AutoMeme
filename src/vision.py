@@ -14,7 +14,7 @@ def get_distance(p1, p2):
 
 def main():
     # --- 1. 预加载图片 ---
-    img_path = r"C:\Myproject\automeme\assets\images\the-original-image-of-the-monkey-thinking-meme-v0-ea1hkdjnx9af1.png"
+    img_path = r"..\assets\images\the-original-image-of-the-monkey-thinking-meme-v0-ea1hkdjnx9af1.png"
     monkey_img = cv2.imread(img_path)
     if monkey_img is None:
         print("图片路径错误！")
