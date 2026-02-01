@@ -3,6 +3,8 @@ import mediapipe as mp
 import pygame
 import numpy as np
 import os
+import etract
+import predict
 
 # --- 1. 配置区 ---
 ACTION_CONFIG = [
@@ -60,41 +62,14 @@ class AutoMemeEngine:
         """精准判定：中轴线触发图1，两侧触发图2"""
         if not results.pose_landmarks or not results.face_landmarks:
             return None
-
-        # 1. 基础参照点
-        nose = results.face_landmarks.landmark[1]  # 鼻尖更准
-        mouth_center_y = nose.y + 0.06  # 嘴唇高度估算
-
-        # 左右嘴角坐标
-        l_corner = results.face_landmarks.landmark[61]
-        r_corner = results.face_landmarks.landmark[291]
-
-        # 2. 收集食指尖
-        tips = []
-        if results.left_hand_landmarks: tips.append(results.left_hand_landmarks.landmark[8])
-        if results.right_hand_landmarks: tips.append(results.right_hand_landmarks.landmark[8])
-        if not tips: return None
-
-        for tip in tips:
-            # 计算到鼻尖中轴线的水平距离 (x) 和 垂直距离 (y)
-            dist_x_to_center = abs(tip.x - nose.x)
-            dist_y_to_mouth = abs(tip.y - mouth_center_y)
-
-            # --- 逻辑 A：食指在嘴唇中间 (图1) ---
-            # 必须满足：y坐标接近嘴唇 且 x坐标极度靠近中轴线
-            if dist_y_to_mouth < 0.05 and dist_x_to_center < 0.025:
-                return next(m for m in ACTION_CONFIG if m["id"] == 1)
-
-            # --- 逻辑 B：食指在嘴角 (图2) ---
-            # 计算到左右两个角点的欧式距离
-            dist_l = np.sqrt((tip.x - l_corner.x) ** 2 + (tip.y - l_corner.y) ** 2)
-            dist_r = np.sqrt((tip.x - r_corner.x) ** 2 + (tip.y - r_corner.y) ** 2)
-
-            if dist_l < 0.04 or dist_r < 0.04:
-                # 只有当不在中轴线时，才判定为嘴角
-                if dist_x_to_center >= 0.025:
-                    return next(m for m in ACTION_CONFIG if m["id"] == 2)
-
+        features = etract.extract_features(results)
+        pred, prob = predict.predict_action(features)
+        confidence = prob[pred]
+        if confidence < 0.7:
+            return None
+        for m in ACTION_CONFIG:
+            if m["id"] == pred+1:
+                return m
         return None
 
     def run(self):

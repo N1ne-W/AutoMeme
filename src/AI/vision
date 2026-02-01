@@ -3,6 +3,8 @@ import mediapipe as mp
 import pygame
 import numpy as np
 import os
+import etact
+
 
 # --- 1. 配置区 ---
 ACTION_CONFIG = [
