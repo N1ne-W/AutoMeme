@@ -1,0 +1,9 @@
+{
+  "features": {
+    "is_donk": { "module": "hand_donk", "params": {}, "description": "Donk: index finger near nose", "category": "hand" },
+    "is_monkeythink": { "module": "hand_monkeythink", "params": {}, "description": "MonkeyThink: finger near mouth corner", "category": "hand" },
+    "is_nfb": { "module": "hand_nfb", "params": {}, "description": "NFB: palm open + near ear + mouth closed", "category": "hand" },
+    "is_omg": { "module": "combo_omg", "params": {}, "description": "OMG: both palms open + ears + mouth open", "category": "combo" },
+    "is_thumbsup": { "module": "hand_thumbsup", "params": {}, "description": "Thumbs up: thumb extended up, other fingers curled", "category": "hand" }
+  }
+}

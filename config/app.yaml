@@ -1,0 +1,32 @@
+camera:
+  index: 0
+  width: 640
+  height: 480
+  fps: 30
+
+mediapipe:
+  model_path: "assets/models/holistic_landmarker.task"
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+
+vosk:
+  model_path: "assets/models/vosk-model-small-cn-0.22"
+  sample_rate: 16000
+
+renderer:
+  width: 1280
+  height: 720
+  fade_duration_ms: 300
+  gif_max_width: 800
+  gif_max_height: 800
+  gif_max_frames: 60
+  greenscreen_fallback: true
+  greenscreen_color: [0, 255, 0]
+
+audio:
+  master_volume: 0.8
+
+debug:
+  draw_landmarks: true
+  show_status_text: true
+  log_level: "DEBUG"

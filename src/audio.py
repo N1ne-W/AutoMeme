@@ -1,1 +1,1 @@
-# 听觉识别模块 (SpeechRecognition)
+# Phase 3: 听觉识别模块 (Vosk)\n# TODO: 实现 src/audio/ 包\n

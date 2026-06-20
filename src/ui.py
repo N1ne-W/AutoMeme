@@ -1,1 +1,1 @@
-# 界面渲染模块 (PyGame)
+# Phase 4: 界面渲染模块 (PyGame)\n# TODO: 实现 src/renderer/ 包\n

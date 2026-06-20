@@ -1,5 +1,7 @@
 opencv-python
 mediapipe
 pygame
-SpeechRecognition
-pyaudio
+numpy
+vosk
+pillow
+pyyaml
