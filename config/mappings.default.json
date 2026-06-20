@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "debounce_default": 8,
+  "cooldown_default_ms": 3000,
+  "mappings": [
+    {
+      "id": "omg", "name": "OMG", "enabled": true,
+      "conditions": { "type": "all", "features": ["is_omg"], "voice_keywords": [] },
+      "actions": { "image": "default/images/7d565fa76b33f1233e1c1d4c3e52a22a.png", "audio": null, "mode": "image" },
+      "priority": 40, "cooldown_ms": 3000, "debounce_frames": 8
+    },
+    {
+      "id": "nfb", "name": "NFB", "enabled": true,
+      "conditions": { "type": "all", "features": ["is_nfb"], "voice_keywords": [] },
+      "actions": { "image": "default/images/29f740ef-fcb7-46e5-b2d2-d7396e547cb8.png", "audio": null, "mode": "image" },
+      "priority": 30, "cooldown_ms": 3000, "debounce_frames": 8
+    },
+    {
+      "id": "donk", "name": "Donk", "enabled": true,
+      "conditions": { "type": "all", "features": ["is_donk"], "voice_keywords": [] },
+      "actions": { "image": "default/images/34ecf09f-b8d1-4848-ad5e-840a94cad80e.png", "audio": null, "mode": "image" },
+      "priority": 20, "cooldown_ms": 3000, "debounce_frames": 8
+    },
+    {
+      "id": "monkeythink", "name": "MonkeyThink", "enabled": true,
+      "conditions": { "type": "all", "features": ["is_monkeythink"], "voice_keywords": [] },
+      "actions": { "image": "default/images/the-original-image-of-the-monkey-thinking-meme-v0-ea1hkdjnx9af1.png", "audio": null, "mode": "image" },
+      "priority": 10, "cooldown_ms": 3000, "debounce_frames": 8
+    },
+    {
+      "id": "thumbsup", "name": "ThumbsUp", "enabled": true,
+      "conditions": { "type": "all", "features": ["is_thumbsup"], "voice_keywords": [] },
+      "actions": { "image": "default/images/a50d674136e37cba01ae8204ad54e016.jpg", "audio": null, "mode": "image" },
+      "priority": 15, "cooldown_ms": 3000, "debounce_frames": 8
+    }
+  ]
+}

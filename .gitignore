@@ -1,19 +1,30 @@
-# python 虚拟环境 (千万别传)
+# python 虚拟环境
 venv/
 env/
 .env
 
-# 编译产生的缓存文件
+# 编译缓存
 __pycache__/
 *.py[cod]
 
-# VS Code 配置 (个人配置通常不传)
+# IDE 配置
 .vscode/
+.idea/
 
-# 操作系统生成的文件
+# 测试缓存
+.pytest_cache/
+
+# 运行时日志
+logs/
+
+# 项目管理文档（不上传）
+docs/
+
+# 废弃文件
+config.py
+assets/images/
+assets/sounds/
+
+# 操作系统
 .DS_Store
 Thumbs.db
-
-#策划书
-项目规划书 (Project Blueprint).md
-
