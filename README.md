@@ -1,48 +1,117 @@
-# AutoMeme — 基于 AI 视觉融合识别的自动吊图跳脸器
+# AutoMeme 🎭
 
-AutoMeme 是一个面向直播/视频互动的**多模态动作识别工具**。通过摄像头捕捉手势与肢体姿态、麦克风监听语音关键词，实时在画面叠加层上弹出对应的表情包（PNG/GIF）和音效。
+> AI 视觉融合识别的自动表情包触发工具 — 面向直播与视频互动
 
-## 核心能力
+[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-GPLv3-green)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Architecture%20Refactor-yellow)](https://github.com/N1ne-W/AutoMeme)
 
-- **视觉识别**：OpenCV 采集 + MediaPipe Holistic 提取全身关键点（手部 21 点 + 身体 33 点 + 面部 468 点）
-- **语音识别**：Vosk 离线引擎，支持中文关键词唤醒
-- **特征向量判定引擎**：布尔特征 + 状态机，支持组合动作判定 + 去抖动
-- **无边框透明叠加层**：可叠加在 OBS / 游戏画面上，不影响原有画面
-- **组合编辑器（GUI）**：拖动配置「动作 + 语音 = 吊图 + 音效」映射
+AutoMeme 通过摄像头实时捕捉你的手势和肢体动作，自动在画面上弹出对应的表情包。无需手动操作，让直播互动更有趣。
 
-## 快速启动
+---
+
+## ✨ 功能
+
+- 🙌 **5 种手势识别** — OMG / NFB / Donk / MonkeyThink / 👍 点赞
+- 🧠 **特征向量判定引擎** — 状态机 + 去抖动 + 冷却，精准不误触
+- ⚙️ **JSON 配置驱动** — 映射表可自定义，新增手势不修改引擎代码
+- 🎨 **PyGame 实时渲染** — 表情包淡入淡出，MediaPipe 骨骼线 Debug
+- 🔊 **语音触发预留** — Vosk 离线识别接口已就绪（Phase 3）
+
+## 🎮 当前支持的手势
+
+| 手势              | 触发方式                     |
+| ----------------- | ---------------------------- |
+| 🎉 **OMG**         | 双手张开 + 靠近耳朵 + 张嘴   |
+| 🖐️ **NFB**         | 单手张开 + 靠近耳朵 + 闭嘴   |
+| 👃 **Donk**        | 食指尖靠近鼻子               |
+| 🐵 **MonkeyThink** | 食指尖靠近嘴角（不靠近鼻子） |
+| 👍 **ThumbsUp**    | 握拳 + 拇指竖起              |
+
+## 🚀 快速开始
 
 ```bash
 git clone https://github.com/N1ne-W/AutoMeme.git
 cd AutoMeme
+
+# 创建虚拟环境（推荐 Python 3.10+）
 python -m venv venv
-.\venv\Scripts\activate   # Windows
+.\venv\Scripts\activate    # Windows
+source venv/bin/activate   # macOS / Linux
+
+# 安装依赖
 pip install -r requirements.txt
+
+# 下载 MediaPipe Holistic 模型
+Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/holistic_landmarker/holistic_landmarker/float16/latest/holistic_landmarker.task" -OutFile "assets/models/holistic_landmarker.task"
+
+# 运行
 python main.py
 ```
 
-## 文档索引
+> **操作提示**：`ESC` 退出 | 左上角显示实时状态和特征值 | 绿色骨骼线 = 身体 | 黄色手掌线 = 手部
 
-| 文档 | 内容 |
-|------|------|
-| [CONTEXT.md](CONTEXT.md) | 领域术语表 |
-| [docs/01-project-overview.md](docs/01-project-overview.md) | 项目说明、范围、里程碑、风险 |
-| [docs/02-requirements-and-acceptance.md](docs/02-requirements-and-acceptance.md) | 功能需求、非功能需求、验收标准 |
-| [docs/03-architecture-and-technical-design.md](docs/03-architecture-and-technical-design.md) | 架构设计、技术选型、ADR |
-| [docs/04-api-and-data-design.md](docs/04-api-and-data-design.md) | 模块接口、配置格式、数据设计 |
-| [docs/05-deployment-operations-and-monitoring.md](docs/05-deployment-operations-and-monitoring.md) | 部署、打包、日志、监控 |
-| [docs/06-testing-release-and-changelog.md](docs/06-testing-release-and-changelog.md) | 测试计划、用例、发布说明 |
+## 🏗️ 项目结构
 
-## 技术栈
+```
+src/
+├── vision/              # 视觉管道
+│   ├── camera.py        #   摄像头采集
+│   ├── holistic_runner.py # MediaPipe Holistic 推理
+│   ├── feature_extractor.py # 特征向量提取
+│   └── features/        #   手势检测器（5 + 3 通用）
+├── engine/              # 判定引擎
+│   ├── state_machine.py #   IDLE → DETECTING → TRIGGERED → COOLDOWN
+│   ├── debounce.py      #   去抖动（连续N帧确认）
+│   ├── cooldown.py      #   冷却计时
+│   ├── mapping_engine.py #  JSON 映射表匹配
+│   └── signals.py       #   信号/事件定义
+├── audio/               # 语音管道（Phase 3）
+├── renderer/            # 渲染层（Phase 4）
+└── editor/              # 组合编辑器（Phase 5）
 
-| 组件 | 技术 |
-|------|------|
-| 视觉识别 | OpenCV + MediaPipe Holistic |
-| 语音识别 | Vosk（离线），备选 SpeechRecognition |
-| GUI / 渲染 | PyGame（无边框透明叠加窗口） |
-| 打包分发 | PyInstaller / Nuitka -> Windows 安装程序 |
-| 语言 | Python 3.10+ |
+config/
+├── app.yaml             # 应用参数
+├── features.json        # 特征注册表
+├── mappings.default.json # 默认映射
+└── mappings.user.json   # 用户自定义映射
 
-## 许可证
+assets/
+├── default/images/      # 内置表情包
+├── default/audio/       # 内置音效
+├── user/images/         # 用户素材
+├── user/audio/
+└── models/              # MediaPipe / Vosk 模型
+```
 
-GNU General Public License v3.0 (GPLv3)
+## 🧪 测试
+
+```bash
+pip install pytest
+python -m pytest tests/ -v
+```
+
+## 📋 技术栈
+
+| 组件     | 技术                                |
+| -------- | ----------------------------------- |
+| 视觉识别 | OpenCV + MediaPipe Holistic (0.10+) |
+| 语音识别 | Vosk（离线，计划中）                |
+| GUI 渲染 | PyGame                              |
+| 打包分发 | PyInstaller / NSIS                  |
+| 配置格式 | JSON + YAML                         |
+| 测试     | pytest                              |
+
+## 🗺️ Roadmap
+
+- [x] Phase 0 — 文档体系 + 项目初始化
+- [x] Phase 1 — 模块化视觉管道 + 特征检测器
+- [x] Phase 2 — 判定引擎（状态机 + 映射）
+- [ ] Phase 3 — Vosk 语音关键词触发
+- [ ] Phase 4 — 无边框透明叠加层 + GIF 支持
+- [ ] Phase 5 — GUI 组合编辑器
+- [ ] Phase 6 — Windows 安装程序
+
+## 📄 License
+
+GNU General Public License v3.0
