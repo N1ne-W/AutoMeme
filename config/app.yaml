@@ -10,7 +10,7 @@ mediapipe:
   min_tracking_confidence: 0.5
 
 vosk:
-  model_path: "assets/models/vosk-model-small-cn-0.22"
+  model_path: "assets/models/vosk-model-small-en-us-0.15"
   sample_rate: 16000
 
 renderer:
@@ -24,9 +24,36 @@ renderer:
   greenscreen_color: [0, 255, 0]
 
 audio:
+  # Master volume applied after fade-in (0.0 - 1.0)
   master_volume: 0.8
+  # Audio lifecycle relative to image:
+  #   follow_image_lifecycle: true  -> fade-out when image disappears
+  #   follow_image_lifecycle: false -> audio lives independently
+  follow_image_lifecycle: true
+  # Loop behaviour:
+  #   loop_when_image_alive: true  -> loop while image is showing
+  #   loop_when_image_alive: false -> play once, then silent
+  loop_when_image_alive: true
+  # Fade durations in milliseconds
+  fade_in_ms: 300
+  fade_out_ms: 300
+
+gesture:
+  # Time-based stabilizer: raw feature must be True this long before considered ""active""
+  enter_debounce_ms: 150
+  # Once active, raw must be False this long before triggering clear
+  exit_debounce_ms: 600
+  # Minimum active time before exit is allowed (optional, 0 = disabled)
+  min_hold_ms: 0
 
 debug:
   draw_landmarks: true
   show_status_text: true
   log_level: "DEBUG"
+  # ---- 新增诊断开关 ----
+  trace_voice: true
+  trace_renderer: true
+  trace_engine: true
+  audio_level_interval_ms: 1000
+  verbose_partial_speech: false
+  overlay_voice_status: true

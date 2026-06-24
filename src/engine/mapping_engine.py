@@ -1,61 +1,65 @@
-"""映射引擎：特征向量 + 语音关键词 → 映射条目匹配。"""
+"""Mapping engine: feature vector + voice keyword -> mapping entry match."""
 import json
 import logging
 import os
 
 logger = logging.getLogger(__name__)
 
+try:
+    from src.diagnostics import log_trace
+except ImportError:
+    def log_trace(*args, **kwargs): pass
+
 
 class MappingEntry:
-    """单条映射条目。"""
     def __init__(self, data: dict):
         self.id: str = data["id"]
         self.name: str = data.get("name", "")
         self.enabled: bool = data.get("enabled", True)
         conditions = data.get("conditions", {})
-        self.condition_type: str = conditions.get("type", "all")  # "all" | "any"
+        self.condition_type: str = conditions.get("type", "all")
         self.features: list[str] = conditions.get("features", [])
         self.voice_keywords: list[str] = conditions.get("voice_keywords", [])
         actions = data.get("actions", {})
         self.image_path: str | None = actions.get("image")
         self.audio_path: str | None = actions.get("audio")
-        self.action_mode: str = actions.get("mode", "image")  # "image" | "audio" | "both"
+        self.action_mode: str = actions.get("mode", "image")
         self.priority: int = data.get("priority", 0)
         self.cooldown_ms: int = data.get("cooldown_ms", 3000)
         self.debounce_frames: int = data.get("debounce_frames", 8)
+        self.display_mode: str = data.get("display_mode", "hold")  # "hold" | "duration"
+        self.duration_ms: int = data.get("duration_ms", 2000)
+        # Gesture stabilizer config (per-mapping override, -1 = use global default)
+        self.enter_debounce_ms: int = data.get("enter_debounce_ms", -1)
+        self.exit_debounce_ms: int = data.get("exit_debounce_ms", -1)
+        self.min_hold_ms: int = data.get("min_hold_ms", -1)
 
 
 class MappingEngine:
-    """管理映射表，接受特征向量和语音信号，返回匹配的 TriggerEvent。"""
-
     def __init__(self):
         self._mappings: list[MappingEntry] = []
         self._audio_keyword_map: dict[str, list[MappingEntry]] = {}
 
-    def load(self, default_path: str, user_path: str | None = None) -> None:
-        """加载默认映射 + 用户映射（用户覆盖默认）。"""
-        merged: dict[str, dict] = {}
+    @property
+    def mappings(self) -> list[MappingEntry]:
+        return self._mappings
 
-        # 加载默认
+    def load(self, default_path: str, user_path: str | None = None) -> None:
+        merged: dict[str, dict] = {}
         if os.path.exists(default_path):
             with open(default_path, "r", encoding="utf-8") as f:
                 default_data = json.load(f)
             for m in default_data.get("mappings", []):
                 merged[m["id"]] = m
             logger.info("Loaded %d default mappings", len(default_data.get("mappings", [])))
-
-        # 加载用户（覆盖同 ID）
         if user_path and os.path.exists(user_path):
             with open(user_path, "r", encoding="utf-8") as f:
                 user_data = json.load(f)
             for m in user_data.get("mappings", []):
                 merged[m["id"]] = m
             logger.info("Loaded %d user mappings", len(user_data.get("mappings", [])))
-
         self._mappings = [MappingEntry(m) for m in merged.values()]
-        self._mappings.sort(key=lambda m: -m.priority)  # 降序
-
-        # 构建语音关键词索引
+        self._mappings.sort(key=lambda m: -m.priority)
         self._audio_keyword_map.clear()
         for m in self._mappings:
             if not m.enabled:
@@ -65,32 +69,46 @@ class MappingEngine:
                 if kw_lower not in self._audio_keyword_map:
                     self._audio_keyword_map[kw_lower] = []
                 self._audio_keyword_map[kw_lower].append(m)
-
         logger.info("Total mappings: %d", len(self._mappings))
+        # Startup asset check
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        for m in self._mappings:
+            if m.image_path and m.enabled:
+                full = os.path.join(project_root, "assets", m.image_path)
+                if not os.path.exists(full):
+                    logger.warning("[config] Asset missing: %s -> %s", m.id, m.image_path)
+                    log_trace("config", "mapping.engine", "asset_missing",
+                              mapping_id=m.id, path=m.image_path)
 
     def match_vision(self, features: dict[str, bool]) -> MappingEntry | None:
-        """根据特征向量匹配映射条目（优先级最高者）。"""
+        active_features = [k for k, v in features.items() if v]
+        if not active_features:
+            return None
         for m in self._mappings:
             if not m.enabled or not m.features:
                 continue
             if self._evaluate_condition(m, features):
+                log_trace("map", "mapping.engine", "mapping_matched",
+                          features=",".join(active_features), mapping_id=m.id,
+                          priority=str(m.priority), image=m.image_path or "null")
                 return m
+        log_trace("map", "mapping.engine", "mapping_missed",
+                  features=",".join(active_features))
         return None
 
     def match_audio(self, keyword: str) -> MappingEntry | None:
-        """根据语音关键词匹配映射条目。"""
         matches = self._audio_keyword_map.get(keyword.lower(), [])
+        matches.sort(key=lambda m: -m.priority)
         for m in matches:
             if m.enabled:
                 return m
         return None
 
     def _evaluate_condition(self, mapping: MappingEntry, features: dict[str, bool]) -> bool:
-        """评估特征条件。"""
         if not mapping.features:
             return False
         results = [features.get(f, False) for f in mapping.features]
         if mapping.condition_type == "all":
             return all(results)
-        else:  # "any"
+        else:
             return any(results)

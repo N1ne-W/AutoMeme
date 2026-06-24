@@ -1,4 +1,4 @@
-"""判定引擎状态机：IDLE → DETECTING → TRIGGERED → COOLDOWN。"""
+"""State machine: IDLE -> DETECTING -> TRIGGERED -> COOLDOWN."""
 import time
 import logging
 from enum import Enum, auto
@@ -9,6 +9,11 @@ from .mapping_engine import MappingEngine
 
 logger = logging.getLogger(__name__)
 
+try:
+    from src.diagnostics import log_trace
+except ImportError:
+    def log_trace(*args, **kwargs): pass
+
 
 class EngineState(Enum):
     IDLE = auto()
@@ -18,11 +23,6 @@ class EngineState(Enum):
 
 
 class StateMachine:
-    """核心判定引擎。
-
-    消费视觉/音频信号，管理状态转移，输出 TriggerEvent。
-    """
-
     def __init__(self, mapping_engine: MappingEngine):
         self._mapping = mapping_engine
         self._state = EngineState.IDLE
@@ -42,11 +42,9 @@ class StateMachine:
         self,
         vision_signal: VisionSignal | None = None,
         audio_signal: AudioSignal | None = None,
+        trace_id: str = "",
     ) -> TriggerEvent | None:
-        """每帧调用，返回本轮是否产生触发事件。"""
         now = time.time()
-
-        # --- 信号合并：获取当前最佳候选映射 ---
         candidate: object | None = None
 
         if vision_signal is not None:
@@ -54,24 +52,21 @@ class StateMachine:
         if candidate is None and audio_signal is not None:
             candidate = self._mapping.match_audio(audio_signal.keyword)
 
-        # --- 状态机转移 ---
+        # ---- IDLE ----
         if self._state == EngineState.IDLE:
             if candidate is not None:
                 self._active_mapping_id = candidate.id
                 self._debounce.reset()
-                self._debounce.update(True)
-                self._state = EngineState.DETECTING
-                logger.debug("IDLE → DETECTING (%s)", candidate.id)
-
-        elif self._state == EngineState.DETECTING:
-            if candidate is not None and candidate.id == self._active_mapping_id:
-                # 同一映射持续满足
+                self._debounce.set_threshold(candidate.debounce_frames)
                 result = self._debounce.update(True)
                 if result == DebounceState.CONFIRMED:
+                    # Immediate trigger (e.g. voice with debounce_frames=1)
                     self._state = EngineState.TRIGGERED
-                    self._cooldown.trigger()
-                    logger.info("DETECTING → TRIGGERED (%s)", candidate.id)
-
+                    self._cooldown.start(candidate.cooldown_ms)
+                    if trace_id:
+                        log_trace(trace_id, "state.machine", "trigger_decision",
+                                  decision="accepted", mapping_id=candidate.id,
+                                  reason="immediate")
                     return TriggerEvent(
                         mapping_id=candidate.id,
                         action_type=candidate.action_mode,
@@ -79,37 +74,71 @@ class StateMachine:
                         audio_path=candidate.audio_path,
                         priority=candidate.priority,
                         timestamp=now,
+                        display_mode=getattr(candidate, 'display_mode', 'hold'),
+                        duration_ms=getattr(candidate, 'duration_ms', 2000),
+                    )
+                self._state = EngineState.DETECTING
+                if trace_id:
+                    log_trace(trace_id, "state.machine", "state_changed",
+                              from_state="IDLE", to_state="DETECTING", feature=candidate.id)
+
+        # ---- DETECTING ----
+        elif self._state == EngineState.DETECTING:
+            if candidate is not None and candidate.id == self._active_mapping_id:
+                result = self._debounce.update(True)
+                if result == DebounceState.CONFIRMED:
+                    self._state = EngineState.TRIGGERED
+                    self._cooldown.start(candidate.cooldown_ms)
+                    if trace_id:
+                        log_trace(trace_id, "state.machine", "trigger_decision",
+                                  decision="accepted", mapping_id=candidate.id,
+                                  reason="debounce_satisfied")
+                    return TriggerEvent(
+                        mapping_id=candidate.id,
+                        action_type=candidate.action_mode,
+                        image_path=candidate.image_path,
+                        audio_path=candidate.audio_path,
+                        priority=candidate.priority,
+                        timestamp=now,
+                        display_mode=getattr(candidate, 'display_mode', 'hold'),
+                        duration_ms=getattr(candidate, 'duration_ms', 2000),
                     )
             elif candidate is not None:
-                # 不同映射，重置去抖动跟踪新映射
                 self._active_mapping_id = candidate.id
                 self._debounce.reset()
                 self._debounce.update(True)
             else:
-                # 条件消失
                 self._debounce.update(False)
                 if self._debounce.counter == 0:
                     self._state = EngineState.IDLE
                     self._active_mapping_id = None
-                    logger.debug("DETECTING → IDLE (lost)")
 
+        # ---- TRIGGERED ----
         elif self._state == EngineState.TRIGGERED:
-            # 立即进入冷却
             self._state = EngineState.COOLDOWN
-            logger.debug("TRIGGERED → COOLDOWN")
+            if trace_id:
+                log_trace(trace_id, "state.machine", "cooldown_started",
+                          cooldown_ms=str(self._cooldown._cooldown_s * 1000))
 
+        # ---- COOLDOWN ----
         elif self._state == EngineState.COOLDOWN:
+            if candidate is not None and trace_id:
+                log_trace(trace_id, "state.machine", "trigger_rejected",
+                          reason="cooldown_active",
+                          cooldown_remaining_ms=f"{self._cooldown.remaining_ms:.0f}")
             if not self._cooldown.is_active:
-                # 冷却结束，检查是否有持续信号
                 self._state = EngineState.IDLE
                 self._active_mapping_id = None
                 self._debounce.reset()
-                logger.debug("COOLDOWN → IDLE")
-
-                # 回查：冷却期间是否有持续信号可直接进入 DETECTING
                 if candidate is not None:
                     self._active_mapping_id = candidate.id
                     self._debounce.update(True)
                     self._state = EngineState.DETECTING
+                elif audio_signal is not None:
+                    candidate2 = self._mapping.match_audio(audio_signal.keyword)
+                    if candidate2 is not None:
+                        self._active_mapping_id = candidate2.id
+                        self._debounce.update(True)
+                        self._state = EngineState.DETECTING
 
         return None

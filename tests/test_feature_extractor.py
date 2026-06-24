@@ -7,9 +7,9 @@ FIX = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 class TestFeatureExtractor:
     def test_loads_features(self):
         fe = FeatureExtractor(os.path.join(FIX, "features.json"))
-        assert "is_squat" in fe.feature_names
-        assert "is_victory" in fe.feature_names
-        assert "is_heart" in fe.feature_names
+        assert "is_donk" in fe.feature_names
+        assert "is_thumbsup" in fe.feature_names
+        assert "is_omg" in fe.feature_names
 
     def test_no_person_all_false(self):
         fe = FeatureExtractor(os.path.join(FIX, "features.json"))

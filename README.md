@@ -1,11 +1,14 @@
-# AutoMeme — 基于 AI 视觉融合识别的自动吊图跳脸器
+﻿# AutoMeme — 基于 AI 视觉融合识别的自动吊图跳脸器
 
 AutoMeme 是一个面向直播/视频互动的**多模态动作识别工具**。通过摄像头捕捉手势与肢体姿态、麦克风监听语音关键词，实时在画面叠加层上弹出对应的表情包（PNG/GIF）和音效。
 
 ## 核心能力
 
 - **视觉识别**：OpenCV 采集 + MediaPipe Holistic 提取全身关键点（手部 21 点 + 身体 33 点 + 面部 468 点）
-- **语音识别**：Vosk 离线引擎，支持中文关键词唤醒
+- **语音识别**：Vosk 离线引擎
+- **姿态稳定器**：时间基进入/退出防抖，消除识别振荡导致的闪烁
+- **音频子系统**：幂等触发、渐入渐出、可配置生命周期（跟随图片/独立循环）
+- **平滑过渡**：图片渐入渐出 + 音频同步淡入淡出，支持中文关键词唤醒
 - **特征向量判定引擎**：布尔特征 + 状态机，支持组合动作判定 + 去抖动
 - **无边框透明叠加层**：可叠加在 OBS / 游戏画面上，不影响原有画面
 - **组合编辑器（GUI）**：拖动配置「动作 + 语音 = 吊图 + 音效」映射
@@ -23,25 +26,25 @@ python main.py
 
 ## 文档索引
 
-| 文档 | 内容 |
-|------|------|
-| [CONTEXT.md](CONTEXT.md) | 领域术语表 |
-| [docs/01-project-overview.md](docs/01-project-overview.md) | 项目说明、范围、里程碑、风险 |
+| 文档                                                         | 内容                           |
+| ------------------------------------------------------------ | ------------------------------ |
+| [CONTEXT.md](CONTEXT.md)                                     | 领域术语表                     |
+| [docs/01-project-overview.md](docs/01-project-overview.md)   | 项目说明、范围、里程碑、风险   |
 | [docs/02-requirements-and-acceptance.md](docs/02-requirements-and-acceptance.md) | 功能需求、非功能需求、验收标准 |
-| [docs/03-architecture-and-technical-design.md](docs/03-architecture-and-technical-design.md) | 架构设计、技术选型、ADR |
-| [docs/04-api-and-data-design.md](docs/04-api-and-data-design.md) | 模块接口、配置格式、数据设计 |
-| [docs/05-deployment-operations-and-monitoring.md](docs/05-deployment-operations-and-monitoring.md) | 部署、打包、日志、监控 |
-| [docs/06-testing-release-and-changelog.md](docs/06-testing-release-and-changelog.md) | 测试计划、用例、发布说明 |
+| [docs/03-architecture-and-technical-design.md](docs/03-architecture-and-technical-design.md) | 架构设计、技术选型、ADR        |
+| [docs/04-api-and-data-design.md](docs/04-api-and-data-design.md) | 模块接口、配置格式、数据设计   |
+| [docs/05-deployment-operations-and-monitoring.md](docs/05-deployment-operations-and-monitoring.md) | 部署、打包、日志、监控         |
+| [docs/06-testing-release-and-changelog.md](docs/06-testing-release-and-changelog.md) | 测试计划、用例、发布说明       |
 
 ## 技术栈
 
-| 组件 | 技术 |
-|------|------|
-| 视觉识别 | OpenCV + MediaPipe Holistic |
-| 语音识别 | Vosk（离线），备选 SpeechRecognition |
-| GUI / 渲染 | PyGame（无边框透明叠加窗口） |
-| 打包分发 | PyInstaller / Nuitka -> Windows 安装程序 |
-| 语言 | Python 3.10+ |
+| 组件       | 技术                                     |
+| ---------- | ---------------------------------------- |
+| 视觉识别   | OpenCV + MediaPipe Holistic              |
+| 语音识别   | Vosk（离线），备选 SpeechRecognition     |
+| GUI / 渲染 | PyGame（无边框透明叠加窗口）             |
+| 打包分发   | PyInstaller / Nuitka -> Windows 安装程序 |
+| 语言       | Python 3.10+                             |
 
 ## 许可证
 

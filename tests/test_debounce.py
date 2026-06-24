@@ -21,12 +21,20 @@ class TestDebounce:
         result = d.update(True)
         assert result == DebounceState.CONFIRMED
 
-    def test_resets_on_mismatch(self):
+    def test_soft_decay_on_mismatch(self):
         d = Debounce(threshold=5)
         for _ in range(3):
             d.update(True)
+        assert d.counter == 3
         d.update(False)
-        assert d.counter == 0
+        assert d.counter == 2  # soft decay: decrement by 1, not reset to 0
+
+    def test_sustained_false_eventually_zero(self):
+        d = Debounce(threshold=5)
+        d.counter = 5
+        for _ in range(5):
+            d.update(False)
+        assert d.counter == 0  # sustained False drains counter to zero
 
     def test_threshold_one(self):
         d = Debounce(threshold=1)
@@ -41,6 +49,17 @@ class TestDebounce:
         for _ in range(10):
             d.update(True)
         assert d.progress <= 1.0
+
+    def test_oscillation_tolerance(self):
+        """2 True, 1 False alternating should eventually confirm (not oscillate forever)."""
+        d = Debounce(threshold=8)
+        # Simulate a shaky hand: True(2) False(1) pattern
+        for _ in range(20):
+            d.update(True)
+            d.update(True)
+            d.update(False)  # brief loss
+        # After 20 cycles: 40 True - 20 False = +20 net -> counter should be >= 8
+        assert d.counter >= 8
 
     def test_manual_reset(self):
         d = Debounce(threshold=8)

@@ -14,4 +14,10 @@ def __getattr__(name):
     if name == "MappingEngine":
         from .mapping_engine import MappingEngine
         return MappingEngine
+    if name == "GestureStabilizer" or name == "GestureEvent" or name == "FeatureState":
+        from .gesture_stabilizer import GestureStabilizer, GestureEvent, FeatureState
+        return locals()[name]
+    if name == "AudioSlot" or name == "AudioState":
+        from .audio_slot import AudioSlot, AudioState
+        return locals()[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

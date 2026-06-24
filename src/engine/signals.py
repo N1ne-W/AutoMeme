@@ -27,3 +27,5 @@ class TriggerEvent:
     audio_path: str | None
     priority: int
     timestamp: float
+    display_mode: str = "hold"
+    duration_ms: int = 2000
